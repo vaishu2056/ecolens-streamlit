@@ -11,7 +11,7 @@ COLORS = [
     (255, 0, 0),      # Building
     (255, 255, 0),    # Road
     (0, 255, 0),      # Tree
-    
+    (255, 0, 255)     # Vegatation
 ]
 
 # Function to create a color mask from class indices
