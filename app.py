@@ -53,23 +53,16 @@ if uploaded_file is not None:
     color_mask = create_color_mask(pred_mask_resized)
     color_mask_resized = Image.fromarray(color_mask).resize(image.size, resample=Image.NEAREST)
 
-    # === Layout with columns: Legend on the left, Image on the right ===
-    st.markdown("### Predicted Segmentation")
-    col1, col2 = st.columns([1, 3])
+    # Show color mask
+    st.image(color_mask_resized, caption="Predicted Segmentation", use_column_width=True)
 
-    with col1:
-        st.markdown("### Legend")
-        for name, color in zip(CLASS_NAMES, COLORS):
-            hex_color = '#%02x%02x%02x' % color
-            st.markdown(
-                f"<span style='color:{hex_color}; font-size:16px;'>⬛ {name}</span>",
-                unsafe_allow_html=True
-            )
-
-    with col2:
-        st.image(color_mask_resized, caption="Predicted Segmentation", use_column_width=True)
-
-    # Overlay section
+    # Overlay option
     st.markdown("### Overlay Segmentation")
     overlay = Image.blend(image.convert("RGBA"), color_mask_resized.convert("RGBA"), alpha=0.5)
     st.image(overlay, caption="Overlay on Original Image", use_column_width=True)
+
+    # Show legend
+    st.markdown("### Legend")
+    for name, color in zip(CLASS_NAMES, COLORS):
+        hex_color = '#%02x%02x%02x' % color
+        st.markdown(f"<span style='color:{hex_color}; font-size:16px;'>⬛ {name}</span>", unsafe_allow_html=True)
