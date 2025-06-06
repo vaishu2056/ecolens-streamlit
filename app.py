@@ -62,7 +62,7 @@ if uploaded_file is not None:
     st.image(overlay, caption="Overlay on Original Image", use_column_width=True)
 
     # Show legend
-    st.markdown("### Legend")
+    st.markdown("### Labels")
     for name, color in zip(CLASS_NAMES, COLORS):
         hex_color = '#%02x%02x%02x' % color
         st.markdown(f"<span style='color:{hex_color}; font-size:16px;'>⬛ {name}</span>", unsafe_allow_html=True)
