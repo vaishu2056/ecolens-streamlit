@@ -1,56 +1,62 @@
 import streamlit as st
 import numpy as np
-from PIL import Image
 import tensorflow as tf
+from PIL import Image
+import matplotlib.pyplot as plt
 
-# Load model
+# Class names and corresponding colors (adjust according to your dataset)
+CLASS_NAMES = ["Background clutter", "Building", "Road", "Tree", "Lake"]
+COLORS = [
+    (0, 0, 0),        # Background clutter
+    (255, 0, 0),      # Building
+    (255, 255, 0),    # Road
+    (0, 255, 0),      # Tree
+    (255, 0, 255)     # Lake
+]
+
+# Function to color mask
+def create_color_mask(pred_mask):
+    color_mask = np.zeros((*pred_mask.shape, 3), dtype=np.uint8)
+    for class_index, color in enumerate(COLORS):
+        color_mask[pred_mask == class_index] = color
+    return color_mask
+
+# Load the model
 @st.cache_resource
 def load_model():
-    return tf.keras.models.load_model("best_model.keras")  # Replace with your model file
+    return tf.keras.models.load_model("model.h5", compile=False)
 
 model = load_model()
 
-# Define label colors
-CLASS_LABELS = {
-    0: ("Unlabeled", [0, 0, 0]),
-    1: ("Road", [128, 64, 128]),
-    2: ("Sidewalk", [244, 35, 232]),
-    3: ("Building", [70, 70, 70]),
-    4: ("Wall", [102, 102, 156]),
-    5: ("Fence", [190, 153, 153]),
-    6: ("Pole", [153, 153, 153]),
-    7: ("Vegetation", [107, 142, 35]),
-    8: ("Car", [0, 0, 142]),
-}
+st.title("EcoLens: Tree and Land Segmentation")
 
-def create_colored_mask(mask):
-    color_mask = np.zeros((mask.shape[0], mask.shape[1], 3), dtype=np.uint8)
-    for class_id, (label, color) in CLASS_LABELS.items():
-        color_mask[mask == class_id] = color
-    return color_mask
-
-def preprocess_image(img, target_size=(256, 256)):
-    img = img.resize(target_size)
-    img_array = np.array(img) / 255.0
-    return np.expand_dims(img_array, axis=0)
-
-def predict_mask(image):
-    preprocessed = preprocess_image(image)
-    pred = model.predict(preprocessed)[0]
-    mask = np.argmax(pred, axis=-1)
-    return mask
-
-# Streamlit UI
-st.title("Semantic Segmentation UI - Ecolens")
-
-uploaded_file = st.file_uploader("Upload a Satellite Image", type=["png", "jpg", "jpeg"])
-
+# Upload image
+uploaded_file = st.file_uploader("Upload an aerial image", type=["jpg", "jpeg", "png"])
 if uploaded_file is not None:
-    image = Image.open(uploaded_file).convert('RGB')
+    image = Image.open(uploaded_file)
     st.image(image, caption="Uploaded Image", use_column_width=True)
 
-    with st.spinner("Predicting..."):
-        mask = predict_mask(image)
-        color_mask = create_colored_mask(mask)
+    # Preprocess image
+    img = image.resize((256, 256))
+    img_array = np.array(img) / 255.0
+    img_array = np.expand_dims(img_array, axis=0)
 
-    st.image(color_mask, caption="Predicted Mask with Labels", use_column_width=True)
+    # Predict
+    pred = model.predict(img_array)
+    pred_mask = np.argmax(pred[0], axis=-1)
+
+    # Resize to original image size
+    pred_mask_resized = tf.image.resize(pred_mask[..., np.newaxis], image.size[::-1], method="nearest")
+    pred_mask_resized = tf.squeeze(pred_mask_resized).numpy().astype(np.uint8)
+
+    # Create color mask
+    color_mask = create_color_mask(pred_mask_resized)
+
+    # Show results
+    st.image(color_mask, caption="Predicted Segmentation", use_column_width=True)
+
+    # Show legend
+    st.markdown("### Legend")
+    for name, color in zip(CLASS_NAMES, COLORS):
+        hex_color = '#%02x%02x%02x' % color
+        st.markdown(f"<span style='color:{hex_color}; font-size:16px;'>⬛ {name}</span>", unsafe_allow_html=True)
