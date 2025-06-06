@@ -5,13 +5,13 @@ from PIL import Image
 import matplotlib.pyplot as plt
 
 # Class names and corresponding colors (adjust according to your dataset)
-CLASS_NAMES = ["Background clutter", "Building", "Road", "Tree", "Small Ground"]
+CLASS_NAMES = ["Background clutter", "Building", "Road", "Tree", "Small Land"]
 COLORS = [
     (128, 128, 128),  # Background clutter (Grey)
     (255, 0, 0),      # Building
     (255, 255, 0),    # Road
     (0, 255, 0),      # Tree
-    (255, 0, 255)     # Small Ground
+    (255, 0, 255)     # Small Land
 ]
 
 # Function to create a color mask from class indices
