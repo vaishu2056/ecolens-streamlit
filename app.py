@@ -7,14 +7,14 @@ import matplotlib.pyplot as plt
 # Class names and corresponding colors (adjust according to your dataset)
 CLASS_NAMES = ["Background clutter", "Building", "Road", "Tree", "Lake"]
 COLORS = [
-    (0, 0, 0),        # Background clutter
+    (128, 128, 128),  # Background clutter (Grey)
     (255, 0, 0),      # Building
     (255, 255, 0),    # Road
     (0, 255, 0),      # Tree
     (255, 0, 255)     # Lake
 ]
 
-# Function to color mask
+# Function to create a color mask from class indices
 def create_color_mask(pred_mask):
     color_mask = np.zeros((*pred_mask.shape, 3), dtype=np.uint8)
     for class_index, color in enumerate(COLORS):
@@ -28,12 +28,12 @@ def load_model():
 
 model = load_model()
 
-st.title("EcoLens: Tree and Land Segmentation")
+st.title("🌱 EcoLens: Tree and Land Segmentation")
 
 # Upload image
 uploaded_file = st.file_uploader("Upload an aerial image", type=["jpg", "jpeg", "png"])
 if uploaded_file is not None:
-    image = Image.open(uploaded_file)
+    image = Image.open(uploaded_file).convert("RGB")
     st.image(image, caption="Uploaded Image", use_column_width=True)
 
     # Preprocess image
@@ -41,19 +41,25 @@ if uploaded_file is not None:
     img_array = np.array(img) / 255.0
     img_array = np.expand_dims(img_array, axis=0)
 
-    # Predict
+    # Predict segmentation
     pred = model.predict(img_array)
     pred_mask = np.argmax(pred[0], axis=-1)
 
-    # Resize to original image size
+    # Resize predicted mask back to original image size
     pred_mask_resized = tf.image.resize(pred_mask[..., np.newaxis], image.size[::-1], method="nearest")
     pred_mask_resized = tf.squeeze(pred_mask_resized).numpy().astype(np.uint8)
 
-    # Create color mask
+    # Create color mask and resize it to original size
     color_mask = create_color_mask(pred_mask_resized)
+    color_mask_resized = Image.fromarray(color_mask).resize(image.size, resample=Image.NEAREST)
 
-    # Show results
-    st.image(color_mask, caption="Predicted Segmentation", use_column_width=True)
+    # Show color mask
+    st.image(color_mask_resized, caption="Predicted Segmentation", use_column_width=True)
+
+    # Overlay option
+    st.markdown("### Overlay Segmentation")
+    overlay = Image.blend(image.convert("RGBA"), color_mask_resized.convert("RGBA"), alpha=0.5)
+    st.image(overlay, caption="Overlay on Original Image", use_column_width=True)
 
     # Show legend
     st.markdown("### Legend")
