@@ -21,14 +21,6 @@ def create_color_mask(pred_mask):
         color_mask[pred_mask == class_index] = color
     return color_mask
 
-# Function to generate labels with percentages and counts
-def make_autopct(values):
-    def my_autopct(pct):
-        total = sum(values)
-        val = int(round(pct * total / 100.0))
-        return f'{pct:.1f}%\n({val})'
-    return my_autopct
-
 # Load the model
 @st.cache_resource
 def load_model():
@@ -74,21 +66,3 @@ if uploaded_file is not None:
     for name, color in zip(CLASS_NAMES, COLORS):
         hex_color = '#%02x%02x%02x' % color
         st.markdown(f"<span style='color:{hex_color}; font-size:16px;'>⬛ {name}</span>", unsafe_allow_html=True)
-
-    # Compute pixel count and percentage for each class
-    counts = [np.sum(pred_mask_resized == i) for i in range(len(CLASS_NAMES))]
-    total_pixels = np.sum(counts)
-    percentages = [count / total_pixels * 100 for count in counts]
-
-    # Plot pie chart
-    st.markdown("### Class Distribution (Pie Chart)")
-    fig, ax = plt.subplots()
-    ax.pie(
-        percentages,
-        labels=CLASS_NAMES,
-        colors=[np.array(c)/255 for c in COLORS],
-        autopct=make_autopct(counts),
-        startangle=90
-    )
-    ax.axis('equal')
-    st.pyplot(fig)
